@@ -252,7 +252,7 @@ class RPSGame
   attr_accessor :human, :computer
   def initialize
     @human = Human.new
-    @computer = Hal.new # [Martin, Hal, Ultron, Robby, Locutus].sample.new
+    @computer = [Martin, Hal, Ultron, Robby, Locutus].sample.new
     @@history = History.new
   end
 
