@@ -1,5 +1,9 @@
 require 'pry'
 
+def clear_screen
+  system('clear') || system('cls')
+end
+
 class Move
   attr_accessor :value
   VALUES = []
@@ -16,23 +20,23 @@ class Move
   end
 
   def scissors?
-    @value.is_a?(Scissors)
+    @value.instance_of?(Scissors)
   end
 
   def rock?
-    @value.is_a?(Rock)
+    @value.instance_of?(Rock)
   end
 
   def paper?
-    @value.is_a?(Paper)
+    @value.instance_of?(Paper)
   end
 
   def lizard?
-    @value.is_a?(Lizard)
+    @value.instance_of?(Lizard)
   end
 
   def spock?
-    @value.is_a?(Spock)
+    @value.instance_of?(Spock)
   end
 
   def >(other_move)
@@ -250,14 +254,15 @@ end
 
 class RPSGame
   attr_accessor :human, :computer
+
   def initialize
     @human = Human.new
     @computer = [Martin, Hal, Ultron, Robby, Locutus].sample.new
-    @@history = History.new
+    @history = History.new
   end
 
-  def self.history
-    @@history.hlog
+  def history
+    @history.hlog
   end
 
   def display_welcome_message
@@ -282,18 +287,26 @@ class RPSGame
   end
 
   def update_history
-    winner_move = @winner.move.value.to_s if @winner
-    human_move = human.move.value.to_s
+    # winner_move =  if @winner
+    # human_move = human.move.value.to_s
     case @winner
     when @human
-      @@history.hlog[:human][winner_move] += 1
+      human_win_update
     when @computer
-      @@history.hlog[:computer][winner_move] += 1
+      computer_win_update
     else
-      @@history.hlog[:ties][human_move] += 1
+      @history.hlog[:ties][human.move.value.to_s] += 1
     end
-    return unless @computer.is_a?(Ultron)
+    return unless @computer.instance_of?(Ultron)
     @computer.next_move = human.move.to_s
+  end
+
+  def human_win_update
+    @history.hlog[:human][@winner.move.value.to_s] += 1
+  end
+
+  def computer_win_update
+    @history.hlog[:computer][@winner.move.value.to_s] += 1
   end
 
   def display_winner
@@ -302,7 +315,8 @@ class RPSGame
     else
       puts "IT'S A TIE"
     end
-
+    sleep(2)
+    clear_screen
     puts "________________\nTHE SCORE IS"
     puts "#{human.name}: #{human.score}"
     puts "#{computer.name}: #{computer.score}\n________________"

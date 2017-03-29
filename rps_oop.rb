@@ -109,6 +109,8 @@ WE WILL NOW VIRTUAL FIST SIGNAL BATTLE"
   def display_moves
     puts "#{human.name.upcase} CHOSE #{human.move}"
     puts "#{computer.name.upcase} CHOSE #{computer.move}"
+    sleep(2)
+    clear_screen
   end
   
   def update_score
