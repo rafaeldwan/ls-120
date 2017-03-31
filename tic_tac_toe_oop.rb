@@ -8,10 +8,13 @@ class Board
                   [[1, 5, 9], [3, 5, 7]] # diagonals
 
   attr_reader :squares
-
+  
   def initialize
-    @squares = (1..9).each_with_object({}) { |i, hash| hash[i] = Square.new }
-    # p @squares
+    initialize_empty_squares
+  end
+  
+  def reset
+    initialize_empty_squares
   end
 
   def []=(key, marker)
@@ -23,7 +26,7 @@ class Board
   end
 
   def unmarked_keys
-    @squares.keys.select { |key| @squares[key].unmarked_key? }
+    @squares.keys.select { |key| @squares[key].umarked? }
   end
 
   def draw
@@ -58,10 +61,6 @@ class Board
     nil
   end
 
-  def reset
-    @squares = (1..9).each_with_object({}) { |i, hash| hash[i] = Square.new }
-  end
-
   private
 
   def three_in_a_row?(squares)
@@ -69,6 +68,11 @@ class Board
     return false if markers.size != 3
     markers.uniq.size == 1
   end
+  
+  def initialize_empty_squares
+    @squares = (1..9).each_with_object({}) { |i, hash| hash[i] = Square.new }
+  end
+  
 end
 
 class Square
@@ -88,7 +92,7 @@ class Square
     @marker
   end
 
-  def unmarked_key?
+  def umarked?
     marker == INITIAL_MARKER
   end
 end
@@ -101,7 +105,7 @@ class Player
     @marker = marker
   end
 
-  def update_score
+  def increment_score
     @score += 1
   end
 end
@@ -234,7 +238,7 @@ class TTTGame
       break if win_or_tie?
       clear_screen_and_display_board if human_turn?
     end
-    update_score
+    increment_score
   end
 
   def set_names_and_marker
@@ -271,7 +275,9 @@ class TTTGame
     computer.name = answer
   end
 
-  def record_names
+  def record_names 
+    # for my own amusement record to an ongoing file of "names" I've generated 
+    # during LS
     filename = "names.txt"
     File.open(filename, 'a') do |file|
       file.puts human.name
@@ -420,10 +426,10 @@ class TTTGame
     board.someone_won? || board.full?
   end
 
-  def update_score
+  def increment_score
     case board.winning_marker
-    when human.marker then @human.update_score
-    when computer.marker then @computer.update_score
+    when human.marker then @human.increment_score
+    when computer.marker then @computer.increment_score
     end
   end
 
@@ -449,8 +455,7 @@ class TTTGame
       break if %w[y n].include? answer
       puts "I'm so sorry, right now I'll only understand Y or N"
     end
-    return false if answer == 'n'
-    return true if answer == 'y'
+    answer == 'y'
   end
 
   def game_reset
