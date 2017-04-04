@@ -1,5 +1,5 @@
 require 'yaml'
-require 'pry'
+
 class BlackJackShared
   MESSAGES = YAML.load_file('prompts.yml')
 
@@ -63,9 +63,7 @@ class Participant < BlackJackShared
     ace_count = hand.count("A")
     total_points = ace_count * 11 + points
 
-    if total_points > PLAY_TO
-      ace_count.times { total_points -= 10 if total_points > PLAY_TO }
-    end
+    ace_count.times { total_points -= 10 if total_points > PLAY_TO }
 
     total_points
   end

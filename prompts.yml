@@ -23,6 +23,7 @@ voiced:
         new_game:            BEGINNING GAME %{game_count}.
         total:               TOTAL
         initial_total:       THAT EQUALS
+        
 generic:
 
         stay:                "%{name} stays."
