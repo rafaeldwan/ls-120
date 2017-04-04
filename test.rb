@@ -1,0 +1,1 @@
+initial_player_hand = ERB.new("IN YOUR HAND IS <% player.hand[0] %> AND <% {player.hand[1] %>.")

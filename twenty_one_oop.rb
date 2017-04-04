@@ -1,17 +1,29 @@
-class Participant
+require 'erb'
+require 'pry'
+require_relative "prompts"
+
+class BlackJackShared
+  def initialize
+    @prompt = ENV["GENERIC_PROMPT"] ? @generic_prompt : Prompts.voiced_prompt
+  end
+end
+
+
+class Participant < BlackJackShared
   PLAY_TO = 21
 
   attr_accessor :hand
   attr_reader :name
 
   def initialize(name)
+    super()
     @hand = []
-    @name = name.upcase
+    @name = name
     @play_to = PLAY_TO
   end
 
   def stay
-    puts "#{name} STAYS."
+    puts @prompt[:stay]
   end
 
   def total
@@ -36,7 +48,7 @@ class Participant
   end
 
   def display_hand
-    puts "#{name} SHOWS #{hand.join(', ')}"
+    puts @prompt[:show]
   end
 
   private
@@ -55,10 +67,10 @@ class Player < Participant
   def choice
     h_or_s = nil
     loop do
-      puts "YOU MUST CHOOSE [H]IT or [S]TAY"
+      puts @prompt[:h_or_s]
       h_or_s = gets.chomp.upcase
       break(h_or_s) if h_or_s == "H" || h_or_s == "S"
-      prompt "THAT IS NOT A VALID INPUT. ERROR. RETRY."
+      puts @prompt[:h_or_s_error]
     end
   end
 end
@@ -69,13 +81,13 @@ class Dealer < Participant
   def choice(deck, player_total)
     loop do
       if keep_hitting?(player_total)
-        puts "DEALER MUST HIT"
+        puts @prompt[:dealer_hits]
         sleep(0.3)
         hand << deck.draw
         display_hand
         sleep(0.3)
       else
-        busted? ? (puts "DEALER BUSTS") : (puts "DEALER STAYS")
+        busted? ? (puts @prompt[:dealer_hits]) : (puts @prompt[:dealer_stays])
         sleep(0.3)
         break
       end
@@ -115,10 +127,11 @@ class Deck
   end
 end
 
-class BlackJackLite
+class BlackJackLite < BlackJackShared
   attr_reader :player, :dealer
 
   def initialize
+    super
     @deck = Deck.new
     @player = Player.new("Player")
     @dealer = Dealer.new("Dealer")
@@ -142,7 +155,7 @@ class BlackJackLite
   private
 
   def display_welcome_message
-    puts "HELLO. IT IS 21."
+    puts @prompt[:welcome_message]
   end
 
   def deal_cards
@@ -151,19 +164,20 @@ class BlackJackLite
   end
 
   def show_initial_cards
-    puts "IN YOUR HAND IS #{@player.hand[0]} AND #{@player.hand[1]}."
-    puts "THE DEALER IN TURN SHOWS #{@dealer.hand[0]}"
+    # binding.pry
+    puts @prompt[:initial_player_hand].result binding
+    puts @prompt[:initial_dealer_hand].result binding
   end
 
   def display_goodbye_message
-    puts "AND SO IT ENDS."
+    puts @prompt[:goodbye]
   end
 
   def player_turn
     loop do
       choice = @player.choice
       if choice == "S"
-        puts "YOU STAY AT #{player.total}"
+        puts @prompt[:player_stays]
         break
       end
       @player.hand << @deck.draw
@@ -172,7 +186,7 @@ class BlackJackLite
     end
 
     if @player.winning_score?
-      puts "#{player.total}. DEALER CANNOT BEAT THAT AND AT BEST CAN TIE."
+      puts @prompt[:winning_score]
     end
     sleep(0.3)
   end
@@ -199,22 +213,21 @@ class BlackJackLite
   def display_result(result)
     sleep(0.5)
     case result
-    when :player_bust then puts "YOU BUSTED WITH #{player.total}. IT IS COMMON. YOU LOSE"
-    when :dealer_bust then puts "DEALER BUSTED WITH #{dealer.total}. YOU HAVE WON"
-    when :tie then puts "UNCOMMON BUT NOT REMARKABLE: A TIE"
+    when :player_bust then puts @prompt[:outcome_p_bust]
+    when :dealer_bust then puts @prompt[:outcome_d_bust]
+    when :tie then puts @prompt[:outcome_tie]
     when :dealer
-      print "AT #{player.total} TO #{dealer.total} YOU WERE BEATEN BY THE "
-      puts "DEALER IN ACCORDANCE WITH THE RULES"
+      puts @prompt[:outcome_dealer_win]
     end
   end
 
   def play_again?
     answer = ""
     loop do
-      puts "ANOTHER GAME IS POSSIBLE. INPUT YOUR CHOICE: Y OR N."
+      puts @prompt[:play_again]
       answer = gets.chomp.upcase
       break if %w[Y N].include? answer
-      puts "INVALID. Y OR N. ERROR. RETRY."
+      puts @prompt[:play_again_error]
     end
     answer == 'Y'
   end
@@ -225,7 +238,7 @@ class BlackJackLite
     @dealer.hand = []
     @game_count += 1
     clear_screen
-    puts "BEGINNING GAME #{@game_count}."
+    puts @prompt[:new_game]
   end
 
   def clear_screen
