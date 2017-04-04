@@ -1,0 +1,49 @@
+voiced:
+
+        stay:                "%{name} STAYS."
+        show:                "%{name} SHOWS %{hand}"
+        h_or_s:              YOU MUST CHOOSE [H]IT or [S]TAY
+        h_or_s_error:        THAT IS NOT A VALID INPUT. ERROR. RETRY.
+        dealer_hits:         DEALER MUST HIT
+        dealer_busts:        DEALER BUSTS
+        dealer_stays:        DEALER STAYS
+        welcome_message:     HELLO. IT IS 21.
+        initial_player_hand: IN YOUR HAND IS %{card1} AND %{card2}.
+        initial_dealer_hand: THE DEALER IN TURN SHOWS %{card}.
+        goodbye:             AND SO IT ENDS
+        player_stays:        YOU STAY AT %{total}
+        winning_score:       "%{total}. DEALER CANNOT BEAT THAT AND AT BEST CAN TIE."
+        p_bust:              YOU BUSTED WITH %{total}. IT IS COMMON. YOU LOSE
+        d_bust:              DEALER BUSTED WITH %{total}. YOU HAVE WON.
+        tie:                 "UNCOMMON BUT NOT REMARKABLE - A TIE"
+        d_win:               AT %{p_total} TO %{d_total} YOU WERE BEATEN BY THE DEALER IN ACCORDANCE WITH THE RULES
+        p_win:               THE SCORE IS %{p_total} TO %{d_total}. YOU HAVE WON.
+        play_again:          "ANOTHER GAME IS POSSIBLE. INPUT YOUR CHOICE: Y OR N"
+        play_again_error:    INVALID. Y OR N. ERROR. RETRY.
+        new_game:            BEGINNING GAME %{game_count}.
+        total:               TOTAL
+        initial_total:       THAT EQUALS
+generic:
+
+        stay:                "%{name} stays."
+        show:                "%{name} shows %{hand}"
+        h_or_s:              Please choose [H]it or [S]tay
+        h_or_s_error:        Sorry, I didn't understand. Please try again.
+        dealer_hits:         Dealer hits.
+        dealer_stays:        Dealer stays.
+        welcome_message:     Welcome to 21!
+        initial_player_hand: You have %{card1} and %{card2}.
+        initial_dealer_hand: Dealer shows %{card}.
+        goodbye:             Thanks for playing 21!
+        player_stays:        You stay at %{total}
+        winning_score:       You got %{total}!
+        p_bust:              You bust at %{total}. You lose.
+        d_bust:              Dealer busts at %{total}. You win.
+        tie:                 A tie!
+        d_win:               "%{p_total} to %{d_total}. Dealer wins."
+        p_win:               "%{p_total} to %{d_total}. You win!"
+        play_again:          Play again? [Y/N]
+        play_again_error:    Sorry, I didn't understand. Please try again.
+        new_game:            Beginning game %{game_count}.
+        total:               Total
+        initial_total:       Total

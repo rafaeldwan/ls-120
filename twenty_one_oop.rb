@@ -1,13 +1,16 @@
-require 'erb'
+require 'yaml'
 require 'pry'
-require_relative "prompts"
-
 class BlackJackShared
+  MESSAGES = YAML.load_file('prompts.yml')
+
   def initialize
-    @prompt = ENV["GENERIC_PROMPT"] ? @generic_prompt : Prompts.voiced_prompt
+    @prompts = ENV["GENERIC_PROMPT"] ? MESSAGES['generic'] : MESSAGES['voiced']
+  end
+
+  def messages(message)
+    @prompts[message]
   end
 end
-
 
 class Participant < BlackJackShared
   PLAY_TO = 21
@@ -23,11 +26,12 @@ class Participant < BlackJackShared
   end
 
   def stay
-    puts @prompt[:stay]
+    puts format(messages("stay"), name: player.name)
   end
 
   def total
     points = 0
+
     hand.each do |card|
       if card.to_i != 0 # check if integer
         points += card.to_i
@@ -35,6 +39,7 @@ class Participant < BlackJackShared
         points += 10
       end
     end
+
     points = ace_calc(points) if hand.include?("A")
     points
   end
@@ -48,29 +53,34 @@ class Participant < BlackJackShared
   end
 
   def display_hand
-    puts @prompt[:show]
+    puts format(messages('show'), name: name, hand: hand.join(', '))
+    puts "#{messages('total')}: #{total}" if ENV["MATH_IS_HARD"]
   end
 
   private
 
   def ace_calc(points)
-    hand.each do |card|
-      if card == "A"
-        points += (points <= @play_to - 11 ? 11 : 1)
-      end
+    ace_count = hand.count("A")
+    total_points = ace_count * 11 + points
+
+    if total_points > PLAY_TO
+      ace_count.times { total_points -= 10 if total_points > PLAY_TO }
     end
-    points
+
+    total_points
   end
 end
 
 class Player < Participant
   def choice
     h_or_s = nil
+
     loop do
-      puts @prompt[:h_or_s]
+      puts messages("h_or_s")
       h_or_s = gets.chomp.upcase
       break(h_or_s) if h_or_s == "H" || h_or_s == "S"
-      puts @prompt[:h_or_s_error]
+
+      puts messages('h_or_s_error')
     end
   end
 end
@@ -78,16 +88,16 @@ end
 class Dealer < Participant
   HIT_UNTIL = 17
 
-  def choice(deck, player_total)
+  def choice(deck)
     loop do
-      if keep_hitting?(player_total)
-        puts @prompt[:dealer_hits]
+      if keep_hitting?
+        puts messages("dealer_hits")
         sleep(0.3)
         hand << deck.draw
         display_hand
         sleep(0.3)
       else
-        busted? ? (puts @prompt[:dealer_hits]) : (puts @prompt[:dealer_stays])
+        puts busted? ? messages("dealer_busts") : messages("dealer_stays")
         sleep(0.3)
         break
       end
@@ -96,8 +106,8 @@ class Dealer < Participant
 
   private
 
-  def keep_hitting?(player_total)
-    total < HIT_UNTIL || (total <= player_total && total < PLAY_TO)
+  def keep_hitting?
+    total < HIT_UNTIL
   end
 end
 
@@ -116,12 +126,14 @@ class Deck
 
   def draw
     card = nil
-    @cards = NEW_DECK.dup if @cards.values.all? == 0
+    @cards = NEW_DECK.dup if @cards.values.all?(&:zero?)
+
     loop do
       card = rand(2..14)
       card = card <= 10 ? card.to_s : FACE_CARDS[card - 11]
       break unless @cards[card] == 0
     end
+
     @cards[card] -= 1
     card
   end
@@ -133,29 +145,38 @@ class BlackJackLite < BlackJackShared
   def initialize
     super
     @deck = Deck.new
-    @player = Player.new("Player")
-    @dealer = Dealer.new("Dealer")
+
+    if ENV["GENERIC_PROMPT"]
+      @player = Player.new("Player")
+      @dealer = Dealer.new("Dealer")
+    else
+      @player = Player.new("PLAYER")
+      @dealer = Dealer.new("DEALER")
+    end
+
     @game_count = 1
   end
 
   def start
     display_welcome_message
+
     loop do
       deal_cards
       show_initial_cards
       player_turn
-      dealer_turn unless @player.busted? || @player.winning_score?
+      dealer_turn unless @player.busted?
       result
       break unless play_again?
       reset
     end
+
     display_goodbye_message
   end
 
   private
 
   def display_welcome_message
-    puts @prompt[:welcome_message]
+    puts messages('welcome_message').center(80)
   end
 
   def deal_cards
@@ -164,36 +185,49 @@ class BlackJackLite < BlackJackShared
   end
 
   def show_initial_cards
-    # binding.pry
-    puts @prompt[:initial_player_hand].result binding
-    puts @prompt[:initial_dealer_hand].result binding
+    puts format(messages('initial_player_hand'), card1: @player.hand[0],
+                                                 card2: @player.hand[1])
+    puts mental_math if ENV["MATH_IS_HARD"]
+    puts format(messages('initial_dealer_hand'), card: dealer.hand[0])
+  end
+
+  def mental_math
+    "#{messages('initial_total')}: #{player.total}"
   end
 
   def display_goodbye_message
-    puts @prompt[:goodbye]
+    puts messages("goodbye")
   end
 
   def player_turn
+    turn_messages
+
     loop do
+      break if @player.winning_score?
       choice = @player.choice
       if choice == "S"
-        puts @prompt[:player_stays]
+        puts @stay_message
         break
       end
+
       @player.hand << @deck.draw
       @player.display_hand
+      turn_messages
       break if @player.busted? || @player.winning_score?
     end
 
-    if @player.winning_score?
-      puts @prompt[:winning_score]
-    end
+    puts @win_score_message if @player.winning_score?
     sleep(0.3)
+  end
+
+  def turn_messages
+    @stay_message = format(messages('player_stays'), total: player.total)
+    @win_score_message = format(messages('winning_score'), total: player.total)
   end
 
   def dealer_turn
     @dealer.display_hand
-    @dealer.choice(@deck, @player.total)
+    @dealer.choice(@deck)
   end
 
   def result
@@ -202,33 +236,52 @@ class BlackJackLite < BlackJackShared
   end
 
   def calculate_result
-    if player.busted? then :player_bust
-    elsif dealer.busted? then :dealer_bust
-    elsif player.total == dealer.total then :tie
-    elsif player.total > dealer.total then :player
-    else :dealer
+    case
+    when player.busted? then :player_bust
+    when dealer.busted? then :dealer_bust
+    when player.total == dealer.total then :tie
+    when player.total > dealer.total then :player
+    else
+      :dealer
     end
   end
 
   def display_result(result)
     sleep(0.5)
-    case result
-    when :player_bust then puts @prompt[:outcome_p_bust]
-    when :dealer_bust then puts @prompt[:outcome_d_bust]
-    when :tie then puts @prompt[:outcome_tie]
-    when :dealer
-      puts @prompt[:outcome_dealer_win]
-    end
+    result_messages
+
+    puts case result
+         when :player_bust then @p_bust_message
+         when :dealer_bust then@d_bust_message
+         when :tie then messages('tie')
+         when :player then @p_win_message
+         when :dealer
+           @d_win_message
+         end
+  end
+
+  def result_messages
+    p_total = player.total
+    d_total = dealer.total
+
+    @p_bust_message = format(messages('p_bust'), total: p_total)
+    @d_bust_message = format(messages('d_bust'), total: d_total)
+    @d_win_message = format(messages('d_win'), p_total: player.total,
+                                               d_total: dealer.total)
+    @p_win_message = format(messages('p_win'), p_total: p_total,
+                                               d_total: d_total)
   end
 
   def play_again?
     answer = ""
+
     loop do
-      puts @prompt[:play_again]
+      puts messages('play_again')
       answer = gets.chomp.upcase
       break if %w[Y N].include? answer
-      puts @prompt[:play_again_error]
+      puts messages('play_again_error')
     end
+
     answer == 'Y'
   end
 
@@ -238,7 +291,7 @@ class BlackJackLite < BlackJackShared
     @dealer.hand = []
     @game_count += 1
     clear_screen
-    puts @prompt[:new_game]
+    puts format(messages('new_game'), game_count: @game_count)
   end
 
   def clear_screen
