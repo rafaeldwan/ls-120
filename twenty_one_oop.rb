@@ -1,6 +1,6 @@
 require 'yaml'
 
-class BlackJackShared
+module BlackJackShared
   MESSAGES = YAML.load_file('prompts.yml')
 
   def initialize
@@ -12,7 +12,9 @@ class BlackJackShared
   end
 end
 
-class Participant < BlackJackShared
+class Participant
+  include BlackJackShared
+
   PLAY_TO = 21
 
   attr_accessor :hand
@@ -110,34 +112,22 @@ class Dealer < Participant
 end
 
 class Deck
-  NEW_DECK = { "2" => 4, "3" => 4, "4" => 4, "5" => 4, "6" => 4,
-               "7" => 4, "8" => 4, "9" => 4, "10" => 4, "J" => 4, "Q" => 4,
-               "K" => 4, "A" => 4 }
+  RANKS = %w[2 3 4 5 6 7 8 9 10 J Q K A]
 
-  FACE_CARDS = ["J", "Q", "K", "A"]
-
-  attr_accessor :cards
+  attr_reader :cards
 
   def initialize
-    @cards = NEW_DECK.dup
+    @cards = (RANKS * 4).shuffle
   end
 
   def draw
-    card = nil
-    @cards = NEW_DECK.dup if @cards.values.all?(&:zero?)
-
-    loop do
-      card = rand(2..14)
-      card = card <= 10 ? card.to_s : FACE_CARDS[card - 11]
-      break unless @cards[card] == 0
-    end
-
-    @cards[card] -= 1
-    card
+    @cards.pop
   end
 end
 
-class BlackJackLite < BlackJackShared
+class BlackJackLite
+  include BlackJackShared
+
   attr_reader :player, :dealer
 
   def initialize
@@ -234,11 +224,14 @@ class BlackJackLite < BlackJackShared
   end
 
   def calculate_result
-    case
-    when player.busted? then :player_bust
-    when dealer.busted? then :dealer_bust
-    when player.total == dealer.total then :tie
-    when player.total > dealer.total then :player
+    if player.busted?
+      :player_bust
+    elsif dealer.busted?
+      :dealer_bust
+    elsif player.total == dealer.total
+      :tie
+    elsif player.total > dealer.total
+      :player
     else
       :dealer
     end
@@ -264,8 +257,8 @@ class BlackJackLite < BlackJackShared
 
     @p_bust_message = format(messages('p_bust'), total: p_total)
     @d_bust_message = format(messages('d_bust'), total: d_total)
-    @d_win_message = format(messages('d_win'), p_total: player.total,
-                                               d_total: dealer.total)
+    @d_win_message = format(messages('d_win'), p_total: p_total,
+                                               d_total: d_total)
     @p_win_message = format(messages('p_win'), p_total: p_total,
                                                d_total: d_total)
   end
